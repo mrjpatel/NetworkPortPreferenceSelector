@@ -58,7 +58,28 @@ class NetworkPortForm extends Component {
         this.onStudentNumberChange = this.onStudentNumberChange.bind(this);
         this.onPort1Change = this.onPort1Change.bind(this);
         this.onPort2Change = this.onPort2Change.bind(this);
+        this.onSubmit = this.onSubmit.bind(this);
     };
+
+    componentDidMount() {
+        // let api = "https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy";
+        // fetch(api,{
+        //     method: 'GET',
+        //     mode: "cors",
+        //     headers: {
+        //         'content-type': 'application/json'
+        //     }
+        // })
+        //     .then((response) => response.json())
+        //     .then((responseJson) => {
+        //         console.log(responseJson);
+        //         this.setState({
+        //             port1: '',
+        //             port2: '',
+        //             studentNumber: '',
+        //         });
+        //     });
+    }
 
     onStudentNumberChange(event) {
         const currentValue = event.target.value;
@@ -105,6 +126,26 @@ class NetworkPortForm extends Component {
         }
     };
 
+    onSubmit(event) {
+        event.preventDefault();
+        fetch('https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy', {
+            method: 'GET',
+            mode: "cors",
+            headers: {
+                'content-type': 'application/json'
+            }
+        })
+            .then((response) => response.json())
+            .then((responseJson) => {
+                console.log(responseJson);
+                this.setState({
+                    port1: '',
+                    port2: '',
+                    studentNumber: '',
+                });
+            });
+    }
+
     render() {
         const {classes} = this.props;
         return (
@@ -123,7 +164,7 @@ class NetworkPortForm extends Component {
                     alignItems="center"
                 >
                     <Paper className={classes.root} elevation={3}>
-                        <form className={classes.form}>
+                        <form className={classes.form} onSubmit={this.onSubmit}>
                             <FormControl margin={"normal"} fullWidth required>
                                 <InputLabel>Student Number</InputLabel>
                                 <Input
