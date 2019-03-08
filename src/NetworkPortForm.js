@@ -10,6 +10,7 @@ import InputLabel from "@material-ui/core/es/InputLabel/InputLabel";
 import AppBar from "@material-ui/core/es/AppBar/AppBar";
 import Button from "@material-ui/core/es/Button/Button";
 import Grid from "@material-ui/core/es/Grid/Grid";
+import ClickAwayListener from "@material-ui/core/es/ClickAwayListener/ClickAwayListener";
 
 const styles = theme => ({
     root: {
@@ -46,14 +47,18 @@ class NetworkPortForm extends Component {
         super(props);
         this.state = {
             studentNumber: '',
-            studentNumberErrorText: '',
+            studentNumberErrorText: 'E.g. s3695854',
             studentNumberError: false,
             port1: '',
-            port1ErrorText: '',
+            port1ErrorText: 'Please enter a number between 61000-61999',
             port1Error: false,
             port2: '',
-            port2ErrorText: '',
+            port2ErrorText: 'Please enter a number between 61000-61999',
             port2Error: false,
+            studentNumberStateChange: false,
+            port1StateChange: false,
+            port2StateChange: false,
+            universalError: '',
         };
         this.onStudentNumberChange = this.onStudentNumberChange.bind(this);
         this.onPort1Change = this.onPort1Change.bind(this);
@@ -82,14 +87,15 @@ class NetworkPortForm extends Component {
     }
 
     onStudentNumberChange(event) {
+        this.setState({studentNumberStateChange: true});
         const currentValue = event.target.value;
 
-        if (currentValue.length <= 1 && this.state.studentNumber.startsWith('s')) {
+        if (currentValue.length <= 1 && !isNaN(currentValue)) {
             this.setState({
                 studentNumber: currentValue,
                 studentNumberError: false
             });
-        } else if (currentValue.startsWith('s')) {
+        } else if (!isNaN(currentValue)) {
             this.setState({
                 studentNumber: currentValue,
                 studentNumberError: false
@@ -101,50 +107,103 @@ class NetworkPortForm extends Component {
     };
 
     onPort1Change(event) {
+        this.setState({port1StateChange: true});
         const currentValue = event.target.value;
-        if (currentValue.startsWith('s')) {
+        if (!isNaN(currentValue)) {
             this.setState({
                 port1: currentValue,
                 port1Error: false
             });
-            console.log(currentValue);
         } else {
-            this.setState({port1Error: true});
+            console.log(currentValue);
         }
+        // if (currentValue.startsWith('s')) {
+        //     this.setState({
+        //         port1: currentValue,
+        //         port1Error: false
+        //     });
+        //     console.log(currentValue);
+        // } else {
+        //     this.setState({port1Error: true});
+        // }
     };
 
     onPort2Change(event) {
+        this.setState({port2StateChange: true});
         const currentValue = event.target.value;
-        if (currentValue.startsWith('s')) {
+        if (!isNaN(currentValue)) {
             this.setState({
                 port2: currentValue,
                 port2Error: false
             });
-            console.log(currentValue);
+
         } else {
-            this.setState({port2Error: true});
+            console.log(currentValue);
         }
     };
 
     onSubmit(event) {
+
         event.preventDefault();
-        fetch('https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy', {
-            method: 'GET',
-            mode: "cors",
-            headers: {
-                'content-type': 'application/json'
-            }
-        })
-            .then((response) => response.json())
-            .then((responseJson) => {
-                console.log(responseJson);
-                this.setState({
-                    port1: '',
-                    port2: '',
-                    studentNumber: '',
+        this.handleClickAway();
+        if(this.state.port1Error || this.state.port2Error || this.state.studentNumberError){
+            this.setState({universalError: 'Please Check your responses. Before submitting'})
+        }
+        else{
+            fetch('https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy', {
+                method: 'GET',
+                mode: "cors",
+                headers: {
+                    'content-type': 'application/json'
+                }
+            })
+                .then((response) => response.json())
+                .then((responseJson) => {
+                    console.log(responseJson);
+                    this.setState({
+                        port1: '',
+                        port2: '',
+                        studentNumber: '',
+                        universalError: '',
+                    });
                 });
-            });
+
+            //TODO: RESET ALL STATES
+        }
+
     }
+
+    handleClickAway = () => {
+        if (this.state.studentNumberStateChange) {
+            if (this.state.studentNumber.length !== 7) {
+                console.log('Invalid Student Number');
+                this.setState({studentNumberErrorText: 'Invalid Student Number.', studentNumberError: true});
+            }
+            else{
+                this.setState({studentNumberErrorText: 'E.g. s3595854', studentNumberError: false});
+            }
+        }
+        if (this.state.port1StateChange) {
+            if ((parseInt(this.state.port1) <= 61000) || (parseInt(this.state.port1) >= 61999)) {
+                console.log('Invalid Port1 Number');
+                this.setState({port1ErrorText: 'Invalid Port Number. Please Enter port between 61000-61999', port1Error: true});
+            }
+            else{
+                console.log('Valid Port Number');
+                this.setState({port1ErrorText: 'Please enter a number between 61000-61999', port1Error: false});
+            }
+        }
+        if (this.state.port2StateChange) {
+            if ((parseInt(this.state.port2) <= 61000) || (parseInt(this.state.port2) >= 61999)) {
+                console.log('Invalid Port2 Number');
+                this.setState({port2ErrorText: 'Invalid Port Number. Please Enter port between 61000-61999', port2Error: true});
+            }
+            else{
+                console.log('Valid Port Number');
+                this.setState({port2ErrorText: 'Please enter a number between 61000-61999', port2Error: false});
+            }
+        }
+    };
 
     render() {
         const {classes} = this.props;
@@ -165,42 +224,48 @@ class NetworkPortForm extends Component {
                 >
                     <Paper className={classes.root} elevation={3}>
                         <form className={classes.form} onSubmit={this.onSubmit}>
+
                             <FormControl margin={"normal"} fullWidth required>
-                                <InputLabel>Student Number</InputLabel>
-                                <Input
-                                    label="Student Number"
-                                    error={this.state.studentNumberError}
-                                    id="simple-start-adornment"
-                                    value={this.state.studentNumber}
-                                    onChange={this.onStudentNumberChange}
-                                />
-                                <FormHelperText id="my-helper-text">E.g. s3595854</FormHelperText>
+                                <InputLabel error={this.state.studentNumberError}>Student Number</InputLabel>
+                                <ClickAwayListener onClickAway={this.handleClickAway}>
+                                    <Input
+                                        label="Student Number"
+                                        error={this.state.studentNumberError}
+                                        id="simple-start-adornment"
+                                        value={this.state.studentNumber}
+                                        onChange={this.onStudentNumberChange}
+                                    />
+                                </ClickAwayListener>
+                                <FormHelperText id="my-helper-text" error={this.state.studentNumberError}>{this.state.studentNumberErrorText}</FormHelperText>
+                            </FormControl>
+
+
+                            <FormControl margin={"normal"} fullWidth required>
+                                <InputLabel error={this.state.port1Error}>Port 1</InputLabel>
+                                <ClickAwayListener onClickAway={this.handleClickAway}>
+                                    <Input
+                                        label="Student Number"
+                                        error={this.state.port1Error}
+                                        id="simple-start-adornment"
+                                        value={this.state.port1}
+                                        onChange={this.onPort1Change}
+                                    />
+                                </ClickAwayListener>
+                                <FormHelperText id="my-helper-text" error={this.state.port1Error}>{this.state.port1ErrorText}</FormHelperText>
                             </FormControl>
 
                             <FormControl margin={"normal"} fullWidth required>
-                                <InputLabel>Port 1</InputLabel>
-                                <Input
-                                    label="Student Number"
-                                    error={this.state.port1Error}
-                                    id="simple-start-adornment"
-                                    value={this.state.port1}
-                                    onChange={this.onPort1Change}
-                                />
-                                <FormHelperText id="my-helper-text">Please enter a number between
-                                    61000-61999</FormHelperText>
-                            </FormControl>
-
-                            <FormControl margin={"normal"} fullWidth required>
-                                <InputLabel>Port 2</InputLabel>
-                                <Input
-                                    label="Student Number"
-                                    error={this.state.port2Error}
-                                    id="simple-start-adornment"
-                                    value={this.state.port2}
-                                    onChange={this.onPort2Change}
-                                />
-                                <FormHelperText id="my-helper-text">Please enter a number between
-                                    61000-61999</FormHelperText>
+                                <InputLabel error={this.state.port2Error}>Port 2</InputLabel>
+                                <ClickAwayListener onClickAway={this.handleClickAway}>
+                                    <Input
+                                        label="Student Number"
+                                        error={this.state.port2Error}
+                                        id="simple-start-adornment"
+                                        value={this.state.port2}
+                                        onChange={this.onPort2Change}
+                                    />
+                                </ClickAwayListener>
+                                <FormHelperText id="my-helper-text" error={this.state.port2Error}>{this.state.port2ErrorText}</FormHelperText>
                             </FormControl>
 
                             <Button
@@ -209,9 +274,11 @@ class NetworkPortForm extends Component {
                                 variant="contained"
                                 color="primary"
                                 className={classes.submit}
+                                
                             >
                                 Submit Preference
                             </Button>
+                            <Typography align={"center"} variant={"body1"} color={"error"}>{this.state.universalError}</Typography>
                         </form>
                     </Paper>
                 </Grid>
