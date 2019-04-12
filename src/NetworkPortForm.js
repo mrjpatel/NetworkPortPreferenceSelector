@@ -12,6 +12,9 @@ import Button from "@material-ui/core/es/Button/Button";
 import Grid from "@material-ui/core/es/Grid/Grid";
 import ClickAwayListener from "@material-ui/core/es/ClickAwayListener/ClickAwayListener";
 
+
+const API = "https://sheets.googleapis.com/v4/spreadsheets/133sgo5Rt-2QfCLRaBfVM-Oc6Wo7-DQOxcGWJCvTqGcU/values:batchGet?ranges=Sheet1&majorDimension=ROWS&key=AIzaSyDkiNMgNr_MqBr3svQitOxKyj9xIUhdreY";
+
 const styles = theme => ({
     root: {
         ...theme.mixins.gutters(),
@@ -40,6 +43,9 @@ const styles = theme => ({
         width: '100%',
         position: 'sticky',
     },
+    error:{
+        marginTop: theme.spacing.unit * 3,
+    },
 });
 
 class NetworkPortForm extends Component {
@@ -47,18 +53,19 @@ class NetworkPortForm extends Component {
         super(props);
         this.state = {
             studentNumber: '',
-            studentNumberErrorText: 'E.g. s3695854',
+            studentNumberErrorText: 'E.g. 1234567',
             studentNumberError: false,
             port1: '',
-            port1ErrorText: 'Please enter a number between 61000-61999',
+            port1ErrorText: 'Please enter a port number between 61000-61999',
             port1Error: false,
             port2: '',
-            port2ErrorText: 'Please enter a number between 61000-61999',
+            port2ErrorText: 'Please enter a port number between 61000-61999',
             port2Error: false,
             studentNumberStateChange: false,
             port1StateChange: false,
             port2StateChange: false,
             universalError: '',
+            items: [],
         };
         this.onStudentNumberChange = this.onStudentNumberChange.bind(this);
         this.onPort1Change = this.onPort1Change.bind(this);
@@ -67,24 +74,8 @@ class NetworkPortForm extends Component {
     };
 
     componentDidMount() {
-        // let api = "https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy";
-        // fetch(api,{
-        //     method: 'GET',
-        //     mode: "cors",
-        //     headers: {
-        //         'content-type': 'application/json'
-        //     }
-        // })
-        //     .then((response) => response.json())
-        //     .then((responseJson) => {
-        //         console.log(responseJson);
-        //         this.setState({
-        //             port1: '',
-        //             port2: '',
-        //             studentNumber: '',
-        //         });
-        //     });
-    }
+
+    };
 
     onStudentNumberChange(event) {
         this.setState({studentNumberStateChange: true});
@@ -100,7 +91,6 @@ class NetworkPortForm extends Component {
                 studentNumber: currentValue,
                 studentNumberError: false
             });
-            console.log(currentValue);
         } else {
             this.setState({studentNumberError: true});
         }
@@ -115,7 +105,6 @@ class NetworkPortForm extends Component {
                 port1Error: false
             });
         } else {
-            console.log(currentValue);
         }
         // if (currentValue.startsWith('s')) {
         //     this.setState({
@@ -138,35 +127,56 @@ class NetworkPortForm extends Component {
             });
 
         } else {
-            console.log(currentValue);
         }
     };
 
     onSubmit(event) {
-
         event.preventDefault();
         this.handleClickAway();
         if(this.state.port1Error || this.state.port2Error || this.state.studentNumberError){
-            this.setState({universalError: 'Please Check your responses. Before submitting'})
+            this.setState({universalError: 'Your preferences were not submitted. Please check your responses and try again.'})
         }
         else{
-            fetch('https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy', {
-                method: 'GET',
-                mode: "cors",
-                headers: {
-                    'content-type': 'application/json'
+            const rows = [];
+            fetch(API).then(response => response.json()).then(data => {
+                let batchRowValues = data.valueRanges[0].values;
+                for (let i = 1; i < batchRowValues.length; i++) {
+                    let rowObject = {};
+                    for (let j = 0; j < batchRowValues[i].length; j++) {
+                        rowObject[batchRowValues[0][j]] = batchRowValues[i][j];
+                    }
+                    rows.push(rowObject.Port1);
+                    rows.push(rowObject.Port2);
                 }
-            })
-                .then((response) => response.json())
-                .then((responseJson) => {
-                    console.log(responseJson);
-                    this.setState({
-                        port1: '',
-                        port2: '',
-                        studentNumber: '',
-                        universalError: '',
-                    });
-                });
+
+                // this.setState({ items: rows });
+                if(rows.includes(this.state.port1, 0)){
+                    console.log('port1 exist');
+                }
+                else{
+                    console.log('port1 doesnt exists');
+                }
+            });
+            console.log(this.state.items);
+            console.log(this.state.port1);
+
+            // fetch('https://r420e694oe.execute-api.ap-southeast-2.amazonaws.com/Deploy', {
+            //     method: 'GET',
+            //     mode: "cors",
+            //     headers: {
+            //         'content-type': 'application/json'
+            //     }
+            // })
+            //     .then((response) => response.json())
+            //     .then((responseJson) => {
+            //         console.log(responseJson);
+            //         this.setState({
+            //             port1: '',
+            //             port2: '',
+            //             studentNumber: '',
+            //             universalError: '',
+            //         });
+            //     });
 
             //TODO: RESET ALL STATES
         }
@@ -180,7 +190,7 @@ class NetworkPortForm extends Component {
                 this.setState({studentNumberErrorText: 'Invalid Student Number.', studentNumberError: true});
             }
             else{
-                this.setState({studentNumberErrorText: 'E.g. s3595854', studentNumberError: false});
+                this.setState({studentNumberErrorText: 'E.g. 1234567', studentNumberError: false});
             }
         }
         if (this.state.port1StateChange) {
@@ -200,6 +210,15 @@ class NetworkPortForm extends Component {
             }
             else{
                 console.log('Valid Port Number');
+                this.setState({port2ErrorText: 'Please enter a number between 61000-61999', port2Error: false});
+            }
+        }
+
+        if(this.state.port1StateChange && this.state.port2StateChange){
+            if(this.state.port1 === this.state.port2){
+                this.setState({port2ErrorText: 'Port 1 and Port 2 cannot be same. Please Choose a different Port 2', port2Error: true});
+            }
+            else{
                 this.setState({port2ErrorText: 'Please enter a number between 61000-61999', port2Error: false});
             }
         }
@@ -274,11 +293,10 @@ class NetworkPortForm extends Component {
                                 variant="contained"
                                 color="primary"
                                 className={classes.submit}
-                                
                             >
                                 Submit Preference
                             </Button>
-                            <Typography align={"center"} variant={"body1"} color={"error"}>{this.state.universalError}</Typography>
+                            <Typography  className={classes.error} align={"center"} variant={"h6"} color={"error"}>{this.state.universalError}</Typography>
                         </form>
                     </Paper>
                 </Grid>
